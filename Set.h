@@ -1,7 +1,6 @@
 #include <iostream>
 #include <algorithm>
 
-#include "Node.h"
 #include "Iterator.h"
 #include "ConstIterator.h"
 #include "ReverseIterator.h"
@@ -46,8 +45,8 @@ public:
 
 	void swap(Set<T>& other);
 
-	Node<T> extract(const Iterator<T>& iter);
-	Node<T> extract(const T& element);
+	T extract(const Iterator<T>& iter);
+	T extract(const T& element);
 
 	size_t count(const T& key) const;
 	Iterator<T> find(const T& key) const;
