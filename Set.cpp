@@ -176,7 +176,7 @@ void Set<T>::swap(Set<T>& other)
 template <class T>
 Node<T> Set<T>::extract(const Iterator<T>& iter)
 {
-	Node<T> node;
+	T node;
 	T* temp = new T[_size - 1];
 
 	size_t counter = 0;
@@ -204,7 +204,7 @@ Node<T> Set<T>::extract(const Iterator<T>& iter)
 }
 
 template <class T>
-Node<T> Set<T>::extract(const T& elem)
+T Set<T>::extract(const T& elem)
 {
 	Node<T> node;
 
@@ -213,7 +213,7 @@ Node<T> Set<T>::extract(const T& elem)
 		if (_elements[i] == elem)
 		{
 			check = 1;
-			node.element = elem;
+			element = elem;
 			break;
 		}
 
@@ -253,5 +253,9 @@ size_t Set<T>::count(const T& key) const
 template <class T>
 Iterator<T> Set<T>::find(const T& key) const
 {
+    for (size_t i = 0; i < _size; i++)
+        if (_elements[i] == key)
+            return begin() + i;
 
+    return end();
 }
