@@ -1,15 +1,15 @@
 #include "Set.h"
 
-template <class T>
-Set<T>::Set(const Set<T>& other) : _size(other._size)
+template <class T, class Comp>
+Set<T, Comp>::Set(const Set<T, Comp>& other) : _size(other._size)
 {
-	_elements = new T[_size];
-	for (size_t i = 0; i < _size; i++)
+	_elements = new T[_size + 2];
+	for (size_t i = 1; i < _size; i++)
 		_elements[i] = other._elements[i];
 }
 
-template <class T> 
-Set<T>& Set<T>::operator=(const Set<T>& other)
+template <class T, class Comp> 
+Set<T, Comp>& Set<T, Comp>::operator=(const Set<T>& other)
 {
 	if (this != &other)
 	{
@@ -19,46 +19,71 @@ Set<T>& Set<T>::operator=(const Set<T>& other)
 			_size = other._size;
 		}
 
-		_elements = new T[_size];
-		for (size_t i = 0; i < _size; ++i)
+		_elements = new T[_size + 2];
+		for (size_t i = 1; i < _size; ++i)
 			_elements[i] = other._elements[i];
 	}
 	return *this;
 }
 
-template <class T>
-void Set<T>::insert(const T& elem)
+template <class T, class Comp>
+void Set<T, Comp>::insert(const T& elem)
 {
-	if (_size == 0)
+	for (size_t i = 0; i < _size; i++)      /*проверка элемента на уникальность*/
+		if (_elements[i] == elem)
+			return;
+
+	MyComparator<T> comp;
+
+	_size++;
+
+	if (_size == 1)                         /*если у нас пустое множество, то просто создаем его на новом элементе*/
 	{
-		_elements = new T[1];
-		_elements[0] = elem;
-		++_size;
+		if (_elements != nullptr)
+			delete[] _elements;
+		_elements = new T[3];
+		_elements[1] = elem;
+	}
+	else if (_size == 2)                    /*если есть 1 элемент, нужно понять, на какое место его ставить*/
+	{
+		T* temp = new T[4];
+		if (comp(_elements[1], elem))
+		{
+			temp[1] = _elements[1];
+			temp[2] = elem;
+		}
+		else
+		{
+			temp[1] = elem;
+			temp[2] = _elements[1];
+		}
+		delete[] _elements;
+		_elements = temp;
 	}
 	else
 	{
-		for (size_t i = 0; i < _size; ++i)
-			if (_elements[i] == elem)
-				return;
+		bool check = false;
+		T* temp = new T[_size + 2];
+		for (size_t i = 1; i < _size; i++)
+		{
+			if (comp(elem, _elements[i]) && comp(elem, _elements[i + 1]))
+			{
+				temp[i] = elem;
+				check = 1;
+			}
+			else
+				temp[i] = _elements[i];
+		}
+		if (!check)
+			temp[_size - 1] = elem;
 
-		T* temp = new T[_size];
-		for (size_t i = 0; i < _size; ++i)
-			temp[i] = _elements[i];
-
-		++_size;
-		_elements = new T[_size];
-		for (size_t i = 0; i < _size - 1; ++i)
-			_elements[i] = temp[i];
-
-		delete[] temp;
-		_elements[_size - 1] = elem;
-
-		std::sort(begin(), end());
+		delete[] _elements;
+		_elements = temp;
 	}
 }
 
-template <class T>
-void Set<T>::clear()
+template <class T, class Comp>
+void Set<T, Comp>::clear()
 {
 	if (_size != 0)
 	{
@@ -67,8 +92,8 @@ void Set<T>::clear()
 	}
 }
 
-template <class T> 
-size_t Set<T>::erase(const T& elem)
+template <class T, class Comp> 
+size_t Set<T, Comp>::erase(const T& elem)
 {
 	bool check = 0;
 	for (size_t i = 0; i < _size; ++i)
@@ -84,7 +109,7 @@ size_t Set<T>::erase(const T& elem)
 		T* temp = new T[_size - 1];
 
 		size_t counter = 0;
-		for (size_t i = 0; i < _size; ++i)
+		for (size_t i = 1; i < _size + 1; ++i)
 			if (_elements[i] != elem)
 			{
 				temp[counter] = _elements[i];
@@ -93,25 +118,20 @@ size_t Set<T>::erase(const T& elem)
 
 		delete[] _elements;
 		_size--;
-		_elements = new T[_size];
-
-		for (size_t i = 0; i < _size; ++i)
-			_elements[i] = temp[i];
-
-		delete[] temp;
+		_elements = temp;
 		return 1;
 	}
 	else
 		return 0;
 }
 
-template <class T>
-void Set<T>::erase(const Iterator<T>& iter)
+template <class T, class Comp>
+void Set<T, Comp>::erase(const Iterator<T>& iter)
 {
 	T* temp = new T[_size - 1];
 
 	size_t counter = 0;
-	for (size_t i = 0; i < _size; ++i)
+	for (size_t i = 1; i < _size + 1; ++i)
 		if (_elements[i] != *iter)
 		{
 			temp[counter] = _elements[i];
@@ -120,16 +140,11 @@ void Set<T>::erase(const Iterator<T>& iter)
 
 	delete[] _elements;
 	_size--;
-	_elements = new T[_size];
-
-	for (size_t i = 0; i < _size; ++i)
-		_elements[i] = temp[i];
-
-	delete[] temp;
+	_elements = temp;
 }
 
-template <class T>
-void Set<T>::erase(const Iterator<T>& l_iter, const Iterator<T>& r_iter)
+template <class T, class Comp>
+void Set<T, Comp>::erase(const Iterator<T>& l_iter, const Iterator<T>& r_iter)
 {
 	size_t diff = std::distance(l_iter, r_iter);
 	T* temp = new T[_size - diff];
@@ -149,32 +164,19 @@ void Set<T>::erase(const Iterator<T>& l_iter, const Iterator<T>& r_iter)
 
 	delete[] _elements;
 	_size -= diff;
-	_elements = new T[_size];
-
-	for (size_t i = 0; i < _size; ++i)
-		_elements[i] = temp[i];
-
-	delete[] temp;
+	_elements = temp;
 }
 
-template <class T>
-void Set<T>::swap(Set<T>& other)
+template <class T, class Comp>
+void Set<T, Comp>::swap(Set<T>& other)
 {
 	Set<T> temp = other;
-
-	other.clear();
-	other._size = _size;
-	for (size_t i = 0; i < other._size; ++i)
-		other._elements[i] = _elements[i];
-
-	clear();
-	_size = temp._size;
-	for (size_t i = 0; i < _size; ++i)
-		_elements[i] = temp._elements[i];
+	other = *this;
+	*this = temp;
 }
 
-template <class T>
-Node<T> Set<T>::extract(const Iterator<T>& iter)
+template <class T, class Comp>
+T Set<T, Comp>::extract(const Iterator<T>& iter)
 {
 	T node;
 	T* temp = new T[_size - 1];
@@ -188,32 +190,27 @@ Node<T> Set<T>::extract(const Iterator<T>& iter)
 			++counter;
 		}
 		else
-			node.element = _elements[i];
+			node = _elements[i];
 	}
 
 	_size--;
-	delete _elements;
-	_elements = new T[_size];
-
-	for (size_t i = 0; i < _size; ++i)
-		_elements[i] = temp[i];
-
-	delete[] temp;
+	delete[] _elements;
+	_elements = temp;
 
 	return node;
 }
 
-template <class T>
-T Set<T>::extract(const T& elem)
+template <class T, class Comp>
+T Set<T, Comp>::extract(const T& elem)
 {
-	Node<T> node;
+	T node;
 
 	bool check = 0;
 	for (size_t i = 0; i < _size; ++i)
 		if (_elements[i] == elem)
 		{
 			check = 1;
-			element = elem;
+			node = elem;
 			break;
 		}
 
@@ -232,30 +229,92 @@ T Set<T>::extract(const T& elem)
 
 		delete[] _elements;
 		_size--;
-		_elements = new T[_size];
-
-		for (size_t i = 0; i < _size; ++i)
-			_elements[i] = temp[i];
-
-		delete[] temp;
+		_elements = temp;
 	}
 	return node;
 }
 
-template <class T>
-size_t Set<T>::count(const T& key) const
+template <class T, class Comp>
+size_t Set<T, Comp>::count(const T& key) const
 {
 	for (size_t i = 0; i < _size; ++i)
 		if (_elements[i] == key)
 			return 1;
+	return 0;
 }
 
-template <class T>
-Iterator<T> Set<T>::find(const T& key) const
+template <class T, class Comp>
+Iterator<T> Set<T, Comp>::find(const T& key) const
 {
-    for (size_t i = 0; i < _size; i++)
-        if (_elements[i] == key)
-            return begin() + i;
+	bool flag = false;
+	int dif = _size / 2;
+	while (flag)
+	{
+		if (_elements[dif] > key)
+			dif -= dif / 2;
+		else if (_elements[dif] < key)
+			dif += dif / 2;
+		else
+			return begin() + dif;
+	}
+}
 
-    return end();
+template <class T, class Comp>
+void Set<T, Comp>::merge(Set<T, Comp>& other)
+{
+	T temp = new T[_size + other._size + 2];
+
+	size_t first_c = 1;
+	size_t second_c = 1;
+	size_t main_c = 1;
+	size_t same_c = 0;
+
+	while ((_elements[first_c] < _size + 1) && (other._elements[second_c] < other._size + 1))
+	{
+		if (_elements[first_c] < other._elements[second_c])
+		{
+			temp[main_c] = _elements[first_c];
+			main_c++;
+			first_c++;
+		}
+		else if (_elements[first_c] > other._elements[second_c])
+		{
+			temp[main_c] = _elements[second_c];
+			main_c++;
+			second_c++;
+		}
+	}
+
+	while (_elements[first_c] < _size + 1)
+	{
+		temp[main_c] = _elements[first_c];
+		main_c++;
+		first_c++;
+	}
+
+	while (other._elements[second_c] < other._size + 1)
+	{
+		temp[main_c] = _elements[second_c];
+		main_c++;
+		second_c++;
+	}
+
+	for (size_t i = 1; i < _size + 1; ++i)
+		for (size_t j = 1; j < _size + 1; ++j)
+			if (_elements[i] == other._elements)
+				same_el++;
+
+	T same_el = new T[same_c];
+	size_t ii = 1;
+
+	for (size_t i = 1; i < _size + 1; ++i)
+		for (size_t j = 1; j < _size + 1; ++j)
+			if (_elements[i] == other._elements)
+				same_el[ii] = _elements[i];
+
+	_size = _size + other._size - same_c;
+	_elements = temp;
+
+	other._size = same_c;
+	other._elements = same_el;
 }
