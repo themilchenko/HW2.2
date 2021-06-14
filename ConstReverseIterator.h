@@ -18,10 +18,6 @@ public:
 
     bool operator==(const ConstReverseIterator<T>& other) const { return pos == other.pos; };
     bool operator!=(const ConstReverseIterator<T>& other) const { return pos != other.pos; };
-    bool operator>(const  ConstReverseIterator<T>& other) const { return pos > other.pos; };
-    bool operator<(const  ConstReverseIterator<T>& other) const { return pos < other.pos; };
-    bool operator>=(const ConstReverseIterator<T>& other) const { return pos >= other.pos; };
-    bool operator<=(const ConstReverseIterator<T>& other) const { return pos <= other.pos; };
 
     reference operator*() const { return *pos; };
     pointer operator->() const { return pos; };
@@ -50,28 +46,5 @@ public:
         ConstReverseIterator<T> temp = *this;
         ++pos;
         return temp;
-    };
-
-    reference operator[](size_t index) const { return pos[index]; };
-
-    ConstReverseIterator operator+(const difference_type& diff) const { return ConstReverseIterator<T>(pos - diff); };
-    friend inline ConstReverseIterator operator+(const difference_type& diff, const ConstReverseIterator<T>& other)
-    {
-        return ConstReverseIterator<T>(other.pos - diff);
-    };
-
-    ConstReverseIterator<T> operator-(const difference_type& diff) const { return ConstReverseIterator<T>(pos + diff); };
-    difference_type operator-(const ConstReverseIterator<T>& other) const { return std::distance(other.pos, pos); };
-
-    ConstReverseIterator<T> operator+=(const difference_type& diff)
-    {
-        pos -= diff;
-        return *this;
-    };
-
-    ConstReverseIterator<T> operator-=(const difference_type& diff)
-    {
-        pos += diff;
-        return *this;
     };
 };
