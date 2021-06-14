@@ -8,7 +8,7 @@ class ReverseIterator
     T* pos;
 
 public:
-    using iterator_category = std::random_access_iterator_tag;
+    using iterator_category = std::bidirectional_iterator_tag;
     using value_type = T;
     using difference_type = int;
     using pointer = T*;
@@ -18,10 +18,6 @@ public:
 
     bool operator==(const ReverseIterator<T>& other) const { return pos == other.pos; };
     bool operator!=(const ReverseIterator<T>& other) const { return pos != other.pos; };
-    bool operator>(const  ReverseIterator<T>& other) const { return pos > other.pos; };
-    bool operator<(const  ReverseIterator<T>& other) const { return pos < other.pos; };
-    bool operator>=(const ReverseIterator<T>& other) const { return pos >= other.pos; };
-    bool operator<=(const ReverseIterator<T>& other) const { return pos <= other.pos; };
 
     reference operator*() const { return *pos; };
     pointer operator->() const { return pos; };
