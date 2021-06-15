@@ -1,7 +1,8 @@
 #include "Set.h"
 #include "Set.cpp"
+#include "MyDataType.h"
 
-template class Set<int>;
-template class Set<char>;
-template class Set<double>;
-template class Set<long long>;
+template class Set<char, MyComparator<char>>;
+template class Set<double, MyComparator<char>>;
+template class Set<int, MyComparator<int>>;
+template class Set<MyDataType, MyComparator<MyDataType>>;
