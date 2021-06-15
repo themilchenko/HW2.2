@@ -27,7 +27,7 @@ public:
 	~Set()
 	{
 		if (_elements != nullptr)
-			_elements = nullptr;
+			delete[] _elements;
 		_size = 0;
 	}
 
