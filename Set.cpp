@@ -97,6 +97,7 @@ void Set<T, Comp>::clear()
 		delete[] _elements;
 		_size = 0;
 	}
+	_elements = new T[2];
 }
 
 template <class T, class Comp> 
