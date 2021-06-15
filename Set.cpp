@@ -4,12 +4,12 @@ template <class T, class Comp>
 Set<T, Comp>::Set(const Set<T, Comp>& other) : _size(other._size)
 {
 	_elements = new T[_size + 2];
-	for (size_t i = 1; i < _size; i++)
+	for (size_t i = 1; i < _size + 1; i++)
 		_elements[i] = other._elements[i];
 }
 
 template <class T, class Comp> 
-Set<T, Comp>& Set<T, Comp>::operator=(const Set<T>& other)
+Set<T, Comp>& Set<T, Comp>::operator=(const Set<T, Comp>& other)
 {
 	if (this != &other)
 	{
@@ -20,7 +20,7 @@ Set<T, Comp>& Set<T, Comp>::operator=(const Set<T>& other)
 		}
 
 		_elements = new T[_size + 2];
-		for (size_t i = 1; i < _size; ++i)
+		for (size_t i = 1; i < _size + 1; ++i)
 			_elements[i] = other._elements[i];
 	}
 	return *this;
@@ -32,8 +32,6 @@ void Set<T, Comp>::insert(const T& elem)
 	for (size_t i = 0; i < _size; i++)      /*проверка элемента на уникальность*/
 		if (_elements[i] == elem)
 			return;
-
-	MyComparator<T> comp;
 
 	_size++;
 
@@ -47,7 +45,7 @@ void Set<T, Comp>::insert(const T& elem)
 	else if (_size == 2)                    /*если есть 1 элемент, нужно понять, на какое место его ставить*/
 	{
 		T* temp = new T[4];
-		if (comp(_elements[1], elem))
+		if (Comp()(_elements[1], elem))
 		{
 			temp[1] = _elements[1];
 			temp[2] = elem;
@@ -64,18 +62,27 @@ void Set<T, Comp>::insert(const T& elem)
 	{
 		bool check = false;
 		T* temp = new T[_size + 2];
-		for (size_t i = 1; i < _size; i++)
+		for (size_t i = 1; i < _size + 1; i++)
 		{
-			if (comp(elem, _elements[i]) && comp(elem, _elements[i + 1]))
+			if (Comp()(elem, _elements[i]))
 			{
 				temp[i] = elem;
 				check = 1;
 			}
 			else
 				temp[i] = _elements[i];
+
+			if (check)
+			{
+				i++;
+				for (size_t j = i; j < _size + 1; j++)
+					temp[j] = _elements[j - 1];
+				break;
+			}
 		}
+
 		if (!check)
-			temp[_size - 1] = elem;
+			temp[_size] = elem;
 
 		delete[] _elements;
 		_elements = temp;
@@ -96,29 +103,21 @@ template <class T, class Comp>
 size_t Set<T, Comp>::erase(const T& elem)
 {
 	bool check = 0;
-	for (size_t i = 0; i < _size; ++i)
+	int pos = -1;
+	for (size_t i = 1; i < _size + 1; ++i)
 		if (_elements[i] == elem)
 		{
 			check = 1;
+			pos = i;
 			break;
 		}
 
 
 	if (check)
 	{
-		T* temp = new T[_size - 1];
-
-		size_t counter = 0;
-		for (size_t i = 1; i < _size + 1; ++i)
-			if (_elements[i] != elem)
-			{
-				temp[counter] = _elements[i];
-				++counter;
-			}
-
-		delete[] _elements;
+		for (int i = pos; i < _size; i++)
+			_elements[i] = _elements[i + 1];
 		_size--;
-		_elements = temp;
 		return 1;
 	}
 	else
@@ -128,49 +127,34 @@ size_t Set<T, Comp>::erase(const T& elem)
 template <class T, class Comp>
 void Set<T, Comp>::erase(const Iterator<T>& iter)
 {
-	T* temp = new T[_size - 1];
+	int pos = std::distance(begin(), iter) + 1;
 
-	size_t counter = 0;
-	for (size_t i = 1; i < _size + 1; ++i)
-		if (_elements[i] != *iter)
-		{
-			temp[counter] = _elements[i];
-			++counter;
-		}
+	for (int i = pos; i < _size; i++)
+		_elements[i] = _elements[i + 1];
 
-	delete[] _elements;
 	_size--;
-	_elements = temp;
 }
 
 template <class T, class Comp>
 void Set<T, Comp>::erase(const Iterator<T>& l_iter, const Iterator<T>& r_iter)
 {
+	size_t beg_diff = std::distance(begin(), l_iter) + 1;
 	size_t diff = std::distance(l_iter, r_iter);
-	T* temp = new T[_size - diff];
-	size_t temp_counter = 0;
-
-	for (size_t i = 0; i < std::distance(begin(), l_iter); ++i)
+	
+	if (diff >= _size)
+		_size = 0;
+	else
 	{
-		temp[temp_counter] = _elements[i];
-		temp_counter++;
+		for (int i = beg_diff; i < _size; ++i)
+			_elements[i] = _elements[i + diff];
+		_size -= diff;
 	}
-
-	for (size_t i = std::distance(begin(), r_iter); i < _size; ++i)
-	{
-		temp[temp_counter] = _elements[i];
-		temp_counter++;
-	}
-
-	delete[] _elements;
-	_size -= diff;
-	_elements = temp;
 }
 
 template <class T, class Comp>
-void Set<T, Comp>::swap(Set<T>& other)
+void Set<T, Comp>::swap(Set<T, Comp>& other)
 {
-	Set<T> temp = other;
+	Set<T, Comp> temp = other;
 	other = *this;
 	*this = temp;
 }
@@ -178,24 +162,13 @@ void Set<T, Comp>::swap(Set<T>& other)
 template <class T, class Comp>
 T Set<T, Comp>::extract(const Iterator<T>& iter)
 {
-	T node;
-	T* temp = new T[_size - 1];
+	T node = *iter;
+	int pos = std::distance(begin(), iter) + 1;
 
-	size_t counter = 0;
-	for (size_t i = 0; i < _size; ++i)
-	{
-		if (_elements[i] != *iter)
-		{
-			temp[counter] = _elements[i];
-			++counter;
-		}
-		else
-			node = _elements[i];
-	}
+	for (int i = pos; i < _size; i++)
+		_elements[i] = _elements[i + 1];
 
 	_size--;
-	delete[] _elements;
-	_elements = temp;
 
 	return node;
 }
@@ -203,34 +176,27 @@ T Set<T, Comp>::extract(const Iterator<T>& iter)
 template <class T, class Comp>
 T Set<T, Comp>::extract(const T& elem)
 {
-	T node;
+	T node = elem;
 
 	bool check = 0;
-	for (size_t i = 0; i < _size; ++i)
+	int pos = -1;
+	for (size_t i = 1; i < _size + 1; ++i)
 		if (_elements[i] == elem)
 		{
 			check = 1;
-			node = elem;
+			pos = i;
 			break;
 		}
 
 
 	if (check)
 	{
-		T* temp = new T[_size - 1];
-
-		size_t counter = 0;
-		for (size_t i = 0; i < _size; ++i)
-			if (_elements[i] != elem)
-			{
-				temp[counter] = _elements[i];
-				++counter;
-			}
-
-		delete[] _elements;
+		for (int i = pos; i < _size; i++)
+			_elements[i] = _elements[i + 1];
 		_size--;
-		_elements = temp;
+		return node;
 	}
+
 	return node;
 }
 
@@ -244,77 +210,88 @@ size_t Set<T, Comp>::count(const T& key) const
 }
 
 template <class T, class Comp>
-Iterator<T> Set<T, Comp>::find(const T& key) const
+Iterator<T> Set<T, Comp>::find(const T& key)
 {
-	bool flag = false;
-	int dif = _size / 2;
-	while (flag)
+	Iterator<T> result = begin();
+	
+	for (size_t i = 1; i < _size + 1; ++i)
 	{
-		if (_elements[dif] > key)
-			dif -= dif / 2;
-		else if (_elements[dif] < key)
-			dif += dif / 2;
-		else
-			return begin() + dif;
+		++result;
+		if (_elements[i] == key)
+			return result;
 	}
+	return end();
 }
 
 template <class T, class Comp>
 void Set<T, Comp>::merge(Set<T, Comp>& other)
 {
-	T temp = new T[_size + other._size + 2];
+	T* temp = new T[_size + other._size + 2];
 
 	size_t first_c = 1;
 	size_t second_c = 1;
 	size_t main_c = 1;
 	size_t same_c = 0;
 
-	while ((_elements[first_c] < _size + 1) && (other._elements[second_c] < other._size + 1))
+	while ((first_c < _size + 1) && (second_c < other._size + 1))
 	{
-		if (_elements[first_c] < other._elements[second_c])
+		if (Comp()(_elements[first_c], other._elements[second_c]))
 		{
 			temp[main_c] = _elements[first_c];
 			main_c++;
 			first_c++;
 		}
-		else if (_elements[first_c] > other._elements[second_c])
+		else if (_elements[first_c] != other._elements[second_c])
 		{
-			temp[main_c] = _elements[second_c];
+			temp[main_c] = other._elements[second_c];
 			main_c++;
 			second_c++;
 		}
+		else
+		{
+			temp[main_c] = _elements[first_c];
+			second_c++;
+			first_c++;
+			main_c++;
+		}
 	}
 
-	while (_elements[first_c] < _size + 1)
+	while (first_c < _size + 1)
 	{
 		temp[main_c] = _elements[first_c];
 		main_c++;
 		first_c++;
 	}
 
-	while (other._elements[second_c] < other._size + 1)
+	while (second_c < other._size + 1)
 	{
-		temp[main_c] = _elements[second_c];
+		temp[main_c] = other._elements[second_c];
 		main_c++;
 		second_c++;
 	}
 
 	for (size_t i = 1; i < _size + 1; ++i)
 		for (size_t j = 1; j < _size + 1; ++j)
-			if (_elements[i] == other._elements)
-				same_el++;
+			if (_elements[i] == other._elements[j])
+				same_c++;
 
-	T same_el = new T[same_c];
+	T* same_el = new T[same_c];
 	size_t ii = 1;
 
-	for (size_t i = 1; i < _size + 1; ++i)
-		for (size_t j = 1; j < _size + 1; ++j)
-			if (_elements[i] == other._elements)
-				same_el[ii] = _elements[i];
+	if (same_c != 0)
+		for (size_t i = 1; i < _size + 1; ++i)
+			for (size_t j = 1; j < _size + 1; ++j)
+				if (_elements[i] == other._elements[j])
+				{
+					same_el[ii] = _elements[i];
+					ii++;
+				}
 
+	delete[] _elements;
 	_size = _size + other._size - same_c;
 	_elements = temp;
 
+	delete[] other._elements;
 	other._size = same_c;
 	other._elements = same_el;
 }
